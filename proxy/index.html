@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Load Testing Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .chart-container {
+      width: 800px;
+      margin-bottom: 50px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-bottom: 40px;
+      width: 80%;
+    }
+    table th, table td {
+      border: 1px solid #999;
+      padding: 6px 10px;
+    }
+    table th {
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Load Testing Result Dashboard</h1>
+
+  <h2>Summary Table</h2>
+  <div id="summaryTable"></div>
+
+  <div class="chart-container">
+    <canvas id="latencyChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="successFailChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="cpuChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="memoryChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="loadDistChart"></canvas>
+  </div>
+
+</body>
+</html>

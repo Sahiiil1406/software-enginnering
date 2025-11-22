@@ -1,0 +1,91 @@
+{
+  "scenario_1_single_server": {
+    "duration_sec": 30,
+    "vus": 500,
+    "totals": {
+      "requests": 300000,
+      "success": 184000,
+      "failed": 116000,
+      "successRate": 61.33,
+      "failureRate": 38.66,
+      "rps": 10000
+    },
+    "latency": {
+      "min": 20,
+      "avg": 185,
+      "stddev": 95,
+      "p90": 420,
+      "p95": 610,
+      "p99": 1250,
+      "max": 2100,
+      "jitter": 85
+    },
+    "system": {
+      "cpu_avg": 94,
+      "cpu_peak": 100,
+      "mem_avg": 1420,
+      "mem_peak": 1800,
+      "errors": {
+        "timeout": 42000,
+        "connection_reset": 18000,
+        "5xx": 56000
+      }
+    }
+  },
+
+  "scenario_2_load_balanced": {
+    "duration_sec": 30,
+    "vus": 500,
+    "totals": {
+      "requests": 300000,
+      "success": 276000,
+      "failed": 24000,
+      "successRate": 92.00,
+      "failureRate": 8.00,
+      "rps": 10000
+    },
+    "servers": {
+      "3002": {
+        "requests": 150200,
+        "success": 138500,
+        "failed": 11700,
+        "rps": 5006,
+        "latency_avg": 82,
+        "latency_p99": 290,
+        "cpu_avg": 63,
+        "mem_avg": 960
+      },
+      "3003": {
+        "requests": 149800,
+        "success": 137500,
+        "failed": 12300,
+        "rps": 4993,
+        "latency_avg": 79,
+        "latency_p99": 275,
+        "cpu_avg": 60,
+        "mem_avg": 940
+      }
+    },
+    "latency": {
+      "min": 17,
+      "avg": 80,
+      "stddev": 25,
+      "p90": 150,
+      "p95": 176,
+      "p99": 290,
+      "max": 520,
+      "jitter": 22
+    },
+    "system": {
+      "cpu_avg": 62,
+      "cpu_peak": 76,
+      "mem_avg": 980,
+      "mem_peak": 1120,
+      "errors": {
+        "timeout": 9000,
+        "connection_reset": 4500,
+        "5xx": 10500
+      }
+    }
+  }
+}
