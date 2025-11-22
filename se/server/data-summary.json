@@ -1,0 +1,45 @@
+{
+  "posts": {
+    "total": 100,
+    "genreDistribution": {
+      "entertainment": 11,
+      "sports": 9,
+      "health": 7,
+      "food": 7,
+      "fashion": 15,
+      "news": 11,
+      "gaming": 12,
+      "travel": 5,
+      "tech": 16,
+      "science": 7
+    },
+    "categoryDistribution": {
+      "interview": 17,
+      "news": 13,
+      "tutorial": 8,
+      "guide": 16,
+      "opinion": 12,
+      "howto": 13,
+      "review": 10,
+      "analysis": 11
+    },
+    "totalEngagement": 59671,
+    "avgEngagement": "596.71"
+  },
+  "users": {
+    "total": 20,
+    "avgInteractions": "11.65",
+    "interestDistribution": {
+      "news": 6,
+      "entertainment": 12,
+      "gaming": 3,
+      "sports": 4,
+      "tech": 9,
+      "food": 5,
+      "health": 9,
+      "science": 5,
+      "fashion": 3,
+      "travel": 5
+    }
+  }
+}

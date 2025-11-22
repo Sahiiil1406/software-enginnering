@@ -1,0 +1,442 @@
+import React, { useState } from 'react';
+import { Play, Database, TrendingUp, Users, Clock, Zap, BarChart3 } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+// Sample data
+const POSTS = Array.from({ length: 100 }, (_, i) => ({
+  id: i + 1,
+  title: `Post ${i + 1}`,
+  genre: ['tech', 'sports', 'entertainment', 'news', 'science'][Math.floor(Math.random() * 5)],
+  category: ['tutorial', 'news', 'review', 'opinion', 'guide'][Math.floor(Math.random() * 5)],
+  engagement: Math.floor(Math.random() * 1000),
+  timestamp: Date.now() - Math.random() * 86400000 * 30
+}));
+
+const USERS = Array.from({ length: 20 }, (_, i) => ({
+  id: i + 1,
+  name: `User ${i + 1}`,
+  interests: ['tech', 'sports', 'entertainment', 'news', 'science'].filter(() => Math.random() > 0.6),
+  genres: ['tutorial', 'news', 'review', 'opinion', 'guide'].filter(() => Math.random() > 0.5),
+  interactions: Array.from({ length: Math.floor(Math.random() * 20) + 5 }, () => 
+    Math.floor(Math.random() * 100) + 1
+  )
+}));
+
+// ML-based recommendation
+const calculateRelevanceScore = (post, user) => {
+  let score = 0;
+  
+  // Interest match
+  if (user.interests.includes(post.genre)) score += 40;
+  
+  // Category match
+  if (user.genres.includes(post.category)) score += 30;
+  
+  // Interaction history
+  if (user.interactions.includes(post.id)) score += 50;
+  
+  // Engagement score (normalized)
+  score += (post.engagement / 1000) * 20;
+  
+  // Recency bonus
+  const daysSincePost = (Date.now() - post.timestamp) / 86400000;
+  score += Math.max(0, 10 - daysSincePost);
+  
+  return score;
+};
+
+const getMLRecommendations = (user, posts, count = 10) => {
+  return posts
+    .map(post => ({
+      ...post,
+      relevanceScore: calculateRelevanceScore(post, user)
+    }))
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, count);
+};
+
+const getRandomRecommendations = (posts, count = 10) => {
+  const shuffled = [...posts].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+};
+
+// Autoscaling simulation
+const simulateServerLoad = (requestsPerSecond, serverCapacity) => {
+  const utilization = (requestsPerSecond / serverCapacity) * 100;
+  const responseTime = utilization > 80 ? 200 + (utilization - 80) * 20 : 100 + utilization;
+  const errorRate = utilization > 90 ? (utilization - 90) * 2 : 0;
+  
+  return {
+    utilization: Math.min(utilization, 100),
+    responseTime: Math.min(responseTime, 5000),
+    errorRate: Math.min(errorRate, 100)
+  };
+};
+
+const FeedSuggestionDemo = () => {
+  const [selectedUser, setSelectedUser] = useState(USERS[0]);
+  const [randomFeed, setRandomFeed] = useState([]);
+  const [mlFeed, setMLFeed] = useState([]);
+  const [comparison, setComparison] = useState(null);
+
+  const runFeedTest = () => {
+    const random = getRandomRecommendations(POSTS);
+    const ml = getMLRecommendations(selectedUser, POSTS);
+    
+    setRandomFeed(random);
+    setMLFeed(ml);
+    
+    // Calculate relevance for comparison
+    const randomRelevance = random.reduce((sum, post) => 
+      sum + calculateRelevanceScore(post, selectedUser), 0) / random.length;
+    const mlRelevance = ml.reduce((sum, post) => 
+      sum + post.relevanceScore, 0) / ml.length;
+    
+    const randomInterestMatch = random.filter(p => 
+      selectedUser.interests.includes(p.genre)).length;
+    const mlInterestMatch = ml.filter(p => 
+      selectedUser.interests.includes(p.genre)).length;
+    
+    setComparison({
+      randomRelevance: randomRelevance.toFixed(2),
+      mlRelevance: mlRelevance.toFixed(2),
+      randomInterestMatch,
+      mlInterestMatch,
+      improvement: ((mlRelevance - randomRelevance) / randomRelevance * 100).toFixed(1)
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Feed Suggestion Comparison
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <label className="block text-sm font-medium mb-2">Select User</label>
+          <select 
+            className="w-full p-2 border rounded"
+            onChange={(e) => setSelectedUser(USERS[e.target.value])}
+          >
+            {USERS.map((user, idx) => (
+              <option key={user.id} value={idx}>
+                {user.name} - Interests: {user.interests.join(', ')}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center">
+          <button
+            onClick={runFeedTest}
+            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+          >
+            <Play className="w-4 h-4" />
+            Run Feed Test
+          </button>
+        </div>
+      </div>
+
+      {comparison && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-gray-700">{comparison.randomRelevance}</div>
+            <div className="text-sm text-gray-600">Random Feed Relevance</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-green-700">{comparison.mlRelevance}</div>
+            <div className="text-sm text-gray-600">ML Feed Relevance</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-purple-700">+{comparison.improvement}%</div>
+            <div className="text-sm text-gray-600">Improvement</div>
+          </div>
+        </div>
+      )}
+
+      {randomFeed.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border rounded-lg p-4">
+            <h4 className="font-semibold mb-3 text-red-700">Random Feed (Static)</h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {randomFeed.map(post => (
+                <div key={post.id} className="bg-gray-50 p-2 rounded text-sm">
+                  <div className="font-medium">{post.title}</div>
+                  <div className="text-xs text-gray-600">
+                    {post.genre} | {post.category} | Score: {calculateRelevanceScore(post, selectedUser).toFixed(1)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-sm text-gray-600">
+              Interest Matches: {comparison?.randomInterestMatch}/10
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h4 className="font-semibold mb-3 text-green-700">ML-Based Feed</h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {mlFeed.map(post => (
+                <div key={post.id} className="bg-green-50 p-2 rounded text-sm">
+                  <div className="font-medium">{post.title}</div>
+                  <div className="text-xs text-gray-600">
+                    {post.genre} | {post.category} | Score: {post.relevanceScore.toFixed(1)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-sm text-gray-600">
+              Interest Matches: {comparison?.mlInterestMatch}/10
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AutoscalingDemo = () => {
+  const [baseCapacity] = useState(100);
+  const [isRunning, setIsRunning] = useState(false);
+  const [noScaleData, setNoScaleData] = useState([]);
+  const [withScaleData, setWithScaleData] = useState([]);
+  const [stats, setStats] = useState(null);
+
+  const runAutoscaleTest = () => {
+    setIsRunning(true);
+    
+    const timeSlots = 30;
+    const peakStart = 15;
+    const peakEnd = 25;
+    
+    const noScale = [];
+    const withScale = [];
+    
+    for (let i = 0; i < timeSlots; i++) {
+      let traffic = 50 + Math.random() * 20;
+      
+      // Traffic spike
+      if (i >= peakStart && i <= peakEnd) {
+        traffic = 120 + Math.random() * 30;
+      }
+      
+      // No autoscaling
+      const noScaleMetrics = simulateServerLoad(traffic, baseCapacity);
+      noScale.push({
+        time: i,
+        traffic: Math.round(traffic),
+        servers: 1,
+        ...noScaleMetrics
+      });
+      
+      // With autoscaling
+      let scaledCapacity = baseCapacity;
+      if (i >= peakStart && i <= peakEnd) {
+        const utilizationEstimate = (traffic / baseCapacity) * 100;
+        if (utilizationEstimate > 70) {
+          scaledCapacity = baseCapacity * Math.ceil(traffic / (baseCapacity * 0.7));
+        }
+      }
+      
+      const withScaleMetrics = simulateServerLoad(traffic, scaledCapacity);
+      withScale.push({
+        time: i,
+        traffic: Math.round(traffic),
+        servers: Math.ceil(scaledCapacity / baseCapacity),
+        capacity: scaledCapacity,
+        ...withScaleMetrics
+      });
+    }
+    
+    setNoScaleData(noScale);
+    setWithScaleData(withScale);
+    
+    // Calculate statistics
+    const noScaleAvgResponse = noScale.reduce((s, d) => s + d.responseTime, 0) / noScale.length;
+    const withScaleAvgResponse = withScale.reduce((s, d) => s + d.responseTime, 0) / withScale.length;
+    const noScaleErrors = noScale.reduce((s, d) => s + d.errorRate, 0);
+    const withScaleErrors = withScale.reduce((s, d) => s + d.errorRate, 0);
+    const avgServers = withScale.reduce((s, d) => s + d.servers, 0) / withScale.length;
+    
+    setStats({
+      noScaleAvgResponse: noScaleAvgResponse.toFixed(0),
+      withScaleAvgResponse: withScaleAvgResponse.toFixed(0),
+      responseImprovement: ((noScaleAvgResponse - withScaleAvgResponse) / noScaleAvgResponse * 100).toFixed(1),
+      noScaleErrors: noScaleErrors.toFixed(1),
+      withScaleErrors: withScaleErrors.toFixed(1),
+      avgServers: avgServers.toFixed(1)
+    });
+    
+    setIsRunning(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          <TrendingUp className="w-5 h-5" />
+          Predictive Autoscaling Comparison
+        </h3>
+      </div>
+
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="text-sm font-medium">Base Capacity</label>
+            <div className="text-2xl font-bold">{baseCapacity} req/s</div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Simulation Duration</label>
+            <div className="text-2xl font-bold">30 time units</div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Peak Period</label>
+            <div className="text-2xl font-bold">15-25</div>
+          </div>
+        </div>
+        
+        <button
+          onClick={runAutoscaleTest}
+          disabled={isRunning}
+          className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:bg-gray-400"
+        >
+          <Zap className="w-4 h-4" />
+          {isRunning ? 'Running Simulation...' : 'Run Autoscaling Test'}
+        </button>
+      </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-red-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-red-700">{stats.noScaleAvgResponse}ms</div>
+            <div className="text-xs text-gray-600">No Scaling Avg Response</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-green-700">{stats.withScaleAvgResponse}ms</div>
+            <div className="text-xs text-gray-600">With Scaling Avg Response</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-purple-700">{stats.responseImprovement}%</div>
+            <div className="text-xs text-gray-600">Response Time Improvement</div>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-blue-700">{stats.avgServers}</div>
+            <div className="text-xs text-gray-600">Avg Servers Used</div>
+          </div>
+        </div>
+      )}
+
+      {noScaleData.length > 0 && (
+        <div className="space-y-6">
+          <div className="border rounded-lg p-4">
+            <h4 className="font-semibold mb-4">Traffic & Server Utilization</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={withScaleData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" label={{ value: 'Time Units', position: 'insideBottom', offset: -5 }} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="traffic" stroke="#8884d8" name="Traffic (req/s)" />
+                <Line type="monotone" dataKey="servers" stroke="#82ca9d" name="Active Servers" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h4 className="font-semibold mb-4">Response Time Comparison</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" label={{ value: 'Time Units', position: 'insideBottom', offset: -5 }} />
+                <YAxis label={{ value: 'Response Time (ms)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" data={noScaleData} dataKey="responseTime" stroke="#ff4444" name="No Autoscaling" />
+                <Line type="monotone" data={withScaleData} dataKey="responseTime" stroke="#44ff44" name="With Autoscaling" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h4 className="font-semibold mb-4">Error Rate Comparison</h4>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis label={{ value: 'Error Rate (%)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip />
+                <Legend />
+                <Bar data={noScaleData} dataKey="errorRate" fill="#ff4444" name="No Autoscaling" />
+                <Bar data={withScaleData} dataKey="errorRate" fill="#44ff44" name="With Autoscaling" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('feed');
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h1 className="text-3xl font-bold mb-6 flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-blue-600" />
+            MERN Stack: Feed Suggestion & Autoscaling Demo
+          </h1>
+
+          <div className="flex gap-2 mb-6 border-b">
+            <button
+              onClick={() => setActiveTab('feed')}
+              className={`px-6 py-3 font-medium ${
+                activeTab === 'feed'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                Feed Suggestion
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('autoscale')}
+              className={`px-6 py-3 font-medium ${
+                activeTab === 'autoscale'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Autoscaling
+              </div>
+            </button>
+          </div>
+
+          {activeTab === 'feed' ? <FeedSuggestionDemo /> : <AutoscalingDemo />}
+
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+            <h4 className="font-semibold mb-2">Technical Details:</h4>
+            <ul className="space-y-1 list-disc list-inside">
+              <li><strong>Feed System:</strong> 100 posts, 20 users with interests/genres. ML uses weighted scoring (interests: 40%, categories: 30%, interactions: 50%, engagement: 20%, recency: 10%)</li>
+              <li><strong>Autoscaling:</strong> Base capacity 100 req/s, peak traffic 120-150 req/s at time 15-25. Scales when utilization {'>'} 70%</li>
+              <li><strong>Metrics:</strong> Response time increases exponentially above 80% utilization. Error rate starts at 90% utilization</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;

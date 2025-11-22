@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed Recommendation - ML vs Random</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .search-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .user-profile {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .user-profile h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .profile-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .profile-item label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .profile-item .value {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 5px;
+        }
+
+        .tag {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .comparison-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .feed-column {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .feed-column h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: normal;
+        }
+
+        .badge.random {
+            background: #ff9800;
+            color: white;
+        }
+
+        .badge.ml {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .post-card {
+            background: #f9f9f9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: transform 0.2s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .post-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .post-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .post-content {
+            font-size: 14px;
+            color: #555;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .post-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .post-tag {
+            background: #e0e0e0;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .post-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .relevance-score {
+            background: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .match-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+
+        .match-indicator.match {
+            background: #4CAF50;
+        }
+
+        .match-indicator.no-match {
+            background: #e0e0e0;
+        }
+
+        .metrics-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .metric-comparison {
+            font-size: 13px;
+            color: #4CAF50;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Feed Recommendation Analysis</h1>
+            <p class="subtitle">Compare ML-based personalized feed vs random feed recommendations</p>
+        </header>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="userInput" placeholder="Enter User ID or Username (e.g., 1 or derek58)">
+                <button onclick="fetchComparison()" id="fetchBtn">Get Feeds</button>
+            </div>
+
+            <div id="userProfile"></div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Loading feeds...
+        </div>
+
+        <div id="metricsSection" style="display: none;">
+            <div class="metrics-section">
+                <h2 style="margin-bottom: 20px;">Performance Metrics</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Relevance (Random)</div>
+                        <div class="metric-value" id="randomRelevance">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Relevance (ML)</div>
+                        <div class="metric-value" id="mlRelevance">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Relevance Improvement</div>
+                        <div class="metric-value" id="improvement">-</div>
+                        <div class="metric-comparison">% better</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Interest Matches (Random)</div>
+                        <div class="metric-value" id="randomMatches">-</div>
+                        <div class="metric-comparison">out of 10</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Interest Matches (ML)</div>
+                        <div class="metric-value" id="mlMatches">-</div>
+                        <div class="metric-comparison">out of 10</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Match Improvement</div>
+                        <div class="metric-value" id="matchImprovement">-</div>
+                        <div class="metric-comparison">more matches</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="feedsSection" class="comparison-section" style="display: none;">
+            <div class="feed-column">
+                <h2>
+                    Random Feed
+                    <span class="badge random">Baseline</span>
+                </h2>
+                <div id="randomFeed"></div>
+            </div>
+
+            <div class="feed-column">
+                <h2>
+                    ML-Based Feed
+                    <span class="badge ml">Personalized</span>
+                </h2>
+                <div id="mlFeed"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let currentUser = null;
+        let comparisonChart = null;
+
+        async function fetchComparison() {
+            const input = document.getElementById('userInput').value.trim();
+            if (!input) {
+                alert('Please enter a User ID or Username');
+                return;
+            }
+
+            const fetchBtn = document.getElementById('fetchBtn');
+            fetchBtn.disabled = true;
+            fetchBtn.textContent = 'Loading...';
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('metricsSection').style.display = 'none';
+            document.getElementById('feedsSection').style.display = 'none';
+
+            try {
+                // First, get user ID if username was provided
+                let userId = input;
+                if (isNaN(input)) {
+                    const usersResponse = await fetch(`${API_BASE}/users`);
+                    const usersData = await usersResponse.json();
+                    const user = usersData.users.find(u => u.username === input);
+                    if (!user) {
+                        alert('User not found');
+                        return;
+                    }
+                    userId = user.id;
+                }
+
+                // Fetch user details
+                const userResponse = await fetch(`${API_BASE}/users/${userId}`);
+                const userData = await userResponse.json();
+                currentUser = userData.user;
+
+                // Fetch comparison data
+                const compareResponse = await fetch(`${API_BASE}/feed/compare/${userId}`);
+                const data = await compareResponse.json();
+
+                displayUserProfile(data.userProfile);
+                displayMetrics(data);
+                displayFeeds(data.random.posts, data.ml.posts);
+                createChart(data);
+
+                document.getElementById('metricsSection').style.display = 'block';
+                document.getElementById('feedsSection').style.display = 'grid';
+            } catch (error) {
+                alert('Error fetching data: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = 'Get Feeds';
+            }
+        }
+
+        function displayUserProfile(profile) {
+            const html = `
+                <div class="user-profile">
+                    <h3>User Profile: ${profile.name}</h3>
+                    <div class="profile-grid">
+                        <div class="profile-item">
+                            <label>Interests</label>
+                            <div class="tags">
+                                ${profile.interests.map(i => `<span class="tag">${i}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="profile-item">
+                            <label>Preferred Genres</label>
+                            <div class="tags">
+                                ${profile.genres.map(g => `<span class="tag">${g}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="profile-item">
+                            <label>Past Interactions</label>
+                            <div class="value">${profile.totalInteractions} posts</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('userProfile').innerHTML = html;
+        }
+
+        function displayMetrics(data) {
+            document.getElementById('randomRelevance').textContent = data.random.avgRelevance;
+            document.getElementById('mlRelevance').textContent = data.ml.avgRelevance;
+            document.getElementById('improvement').textContent = data.improvement.relevanceImprovement;
+            document.getElementById('randomMatches').textContent = data.random.interestMatches;
+            document.getElementById('mlMatches').textContent = data.ml.interestMatches;
+            document.getElementById('matchImprovement').textContent = '+' + data.improvement.interestMatchImprovement;
+        }
+
+        function displayFeeds(randomPosts, mlPosts) {
+            document.getElementById('randomFeed').innerHTML = randomPosts.map(post => createPostCard(post, false)).join('');
+            document.getElementById('mlFeed').innerHTML = mlPosts.map(post => createPostCard(post, true)).join('');
+        }
+
+        function createPostCard(post, showScore) {
+            const isInterestMatch = currentUser && currentUser.interests.includes(post.genre);
+            const isCategoryMatch = currentUser && currentUser.genres.includes(post.category);
+            const hasInteracted = currentUser && currentUser.interactions.includes(post.id);
+
+            return `
+                <div class="post-card">
+                    <div class="post-header">
+                        <div>
+                            <div class="post-title">${post.title}</div>
+                            <div class="post-meta">
+                                ${post.genre}
+                                ${isInterestMatch ? '<span class="match-indicator match" title="Matches user interest"></span>' : '<span class="match-indicator no-match"></span>'}
+                                · ${post.category}
+                                ${isCategoryMatch ? '<span class="match-indicator match" title="Matches user genre"></span>' : '<span class="match-indicator no-match"></span>'}
+                                ${hasInteracted ? ' · ⭐ Previously interacted' : ''}
+                            </div>
+                        </div>
+                        ${showScore && post.relevanceScore ? `<div class="relevance-score">${post.relevanceScore.toFixed(1)}</div>` : ''}
+                    </div>
+                    <div class="post-content">${post.content.substring(0, 150)}...</div>
+                    <div class="post-tags">
+                        ${post.tags.slice(0, 3).map(tag => `<span class="post-tag">${tag}</span>`).join('')}
+                    </div>
+                    <div class="post-stats">
+                        <span>👁 ${post.views}</span>
+                        <span>❤️ ${post.likes}</span>
+                        <span>💬 ${post.comments}</span>
+                        <span>🔗 ${post.shares}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createChart(data) {
+            const ctx = document.getElementById('comparisonChart');
+            
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Avg Relevance Score', 'Interest Matches', 'Category Matches'],
+                    datasets: [
+                        {
+                            label: 'Random Feed',
+                            data: [
+                                parseFloat(data.random.avgRelevance),
+                                data.random.interestMatches,
+                                data.random.categoryMatches
+                            ],
+                            backgroundColor: 'rgba(255, 152, 0, 0.7)',
+                            borderColor: 'rgb(255, 152, 0)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'ML-Based Feed',
+                            data: [
+                                parseFloat(data.ml.avgRelevance),
+                                data.ml.interestMatches,
+                                data.ml.categoryMatches
+                            ],
+                            backgroundColor: 'rgba(76, 175, 80, 0.7)',
+                            borderColor: 'rgb(76, 175, 80)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Feed Performance Comparison'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchComparison();
+            }
+        });
+    </script>
+</body>
+</html>
